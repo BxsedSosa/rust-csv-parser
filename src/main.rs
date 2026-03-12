@@ -62,14 +62,10 @@ fn create_date(dates: Vec<i32>) -> String {
 fn create_time(time: Vec<i8>) -> String {
     let mut new_time = String::new();
     for (i, timing) in time.into_iter().enumerate() {
+        new_time.push_str(&timing.to_string());
         match i {
-            0 | 1 => {
-                new_time.push_str(&timing.to_string());
-                new_time.push(':');
-            }
-            _ => {
-                new_time.push_str(&timing.to_string());
-            }
+            0 | 1 => new_time.push(':'),
+            _ => break,
         }
     }
     println!("Time: {}", new_time);
@@ -77,51 +73,28 @@ fn create_time(time: Vec<i8>) -> String {
     new_time
 }
 
-fn create_address(address: Vec<i8>) -> String {
+fn create_address(address: Vec<i16>) -> String {
     let mut joined_address = String::new();
     for (i, addr) in address.into_iter().enumerate() {
         match i {
-            0 | 1 => {
-                joined_address.push_str(&addr.to_string());
-                joined_address.push('-');
-            }
-            _ => {
-                joined_address.push_str(&addr.to_string());
-            }
+            0 => joined_address.push_str("Node: "),
+            1 => joined_address.push_str(" Loop: "),
+            _ => joined_address.push_str(" Address: "),
         }
+        joined_address.push_str(&addr.to_string());
     }
-    println!("Address: {}", joined_address);
+    println!("Module = {}", joined_address);
 
     joined_address
 }
 
-fn create_event(
-    event: String,
-    date: String,
-    time: String,
-    fire_type: String,
-    is_in: bool,
-    address: Vec<i8>,
-    message: String,
-) -> Event {
-    Event {
-        event,
-        date,
-        time,
-        fire_type,
-        is_in,
-        address,
-        message,
-    }
-}
-
-fn seperate_line(line: &str) {
+fn create_event(line: &str) {
     let mut event = String::new();
     let mut date: Vec<i32> = Vec::new();
     let mut time: Vec<i8> = Vec::new();
     let mut fire_type = String::new();
     let mut is_in = false;
-    let mut address: Vec<i8> = Vec::new();
+    let mut address: Vec<i16> = Vec::new();
     let mut message = String::new();
 
     for (i, line) in line.split(",").enumerate() {
@@ -148,9 +121,47 @@ fn seperate_line(line: &str) {
     println!();
 }
 
+fn create_command_event(line: &str) {
+    let mut event = String::new();
+    let mut date: Vec<i32> = Vec::new();
+    let mut time: Vec<i8> = Vec::new();
+    let mut status = String::new();
+    let mut command_id: i32 = 0;
+    let mut operator = String::new();
+    let mut operator_priv: &str = "";
+    let mut message = String::new();
+
+    for (i, col) in line.split(',').enumerate() {
+        match i {
+            0 => event.push_str(col),
+            1..=3 => date.push(col.parse().unwrap()),
+            4..=6 => time.push(col.parse().unwrap()),
+            9 => status.push_str(col),
+            10 => command_id = col.parse().unwrap(),
+            11 => operator.push_str(col),
+            12 => operator_priv = col,
+            7..=8 => continue,
+            _ => message.push_str(col),
+        }
+    }
+
+    create_date(date);
+    create_time(time);
+    println!("Command ID: {}", command_id);
+    println!("Operator: {}", operator);
+    println!("Operator Privilege: {}", operator_priv);
+    println!("Message = {}", message);
+    println!();
+}
+
 fn main() {
     let file_lines = get_file_lines();
     for line in file_lines {
-        seperate_line(&line);
+        let event = line.split(",").next().unwrap();
+        if event.contains("COMMAND") {
+            create_command_event(&line);
+        } else {
+            create_event(&line);
+        }
     }
 }
